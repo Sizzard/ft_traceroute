@@ -1,0 +1,7 @@
+{
+    "files.associations": {
+        "ft_traceroute.h": "c",
+        "socket.h": "c",
+        "ip.h": "c"
+    }
+}

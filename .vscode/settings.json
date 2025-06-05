@@ -2,6 +2,8 @@
     "files.associations": {
         "ft_traceroute.h": "c",
         "socket.h": "c",
-        "ip.h": "c"
+        "ip.h": "c",
+        "stdio.h": "c",
+        "in.h": "c"
     }
 }

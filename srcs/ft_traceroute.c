@@ -32,7 +32,7 @@ char *get_dest_address(struct iphdr *ip) {
 
 t_response parse_response(void *buf, int bytes) {
     struct iphdr *ip = buf;
-    struct icmphdr* icmp = buf + 48;
+    struct icmphdr* icmp = buf + 20;
     t_response response = {0};
     (void)bytes;
 
@@ -40,6 +40,10 @@ t_response parse_response(void *buf, int bytes) {
     response.type = icmp->type;
     response.address = get_dest_address(ip);
     response.time = parse_time_stamp(buf);
+    if (response.type != 0) {
+        response.time = parse_time_stamp(buf + 28);
+        icmp = buf + 48;
+    }
     response.id = ntohs(icmp->un.echo.id);
 
     return response;
@@ -95,6 +99,8 @@ int ft_traceroute(char *real_address, char *address) {
     if (sock == -1) {
         return 1;
     }
+
+    printf("traceroute to %s (%s), 30 hops max, 60 byte packets\n", real_address, address);
     
     while (ttl < 30) {
 
@@ -104,8 +110,10 @@ int ft_traceroute(char *real_address, char *address) {
 
         int bytes = 0;
 
+        unsigned long int og_time = getTimeStamp();
+
         bytes = sendto(sock, packet, 60, 0, (const struct sockaddr *)&addr, sizeof(addr));
-        printf("Sended %d bytes\n", bytes);
+        // printf("Sended %d bytes\n", bytes);
         if (bytes <= 0) {
             fprintf(stderr, "ft_traceroute: sending packet: No buffer space available\n");
             return 1;
@@ -113,20 +121,29 @@ int ft_traceroute(char *real_address, char *address) {
 
         // while (true) {
             bytes = recvfrom(sock, recv_buf, 1024, 0, 0, NULL);
-            if (bytes > 60) {
-                printf("Received %d bytes\n", bytes);
-                // dump_packet(recv_buf);
+            // printf("Received %d bytes\n", bytes);
+            if (bytes > 0) {
+                // print_icmp_header(recv_buf + 20, bytes);
                 t_response response = parse_response(recv_buf, bytes);
-                printf("RESPONSE IS TYPE : %d\n", response.type);
-                printf("RES ID : %d --- PID : %d\n", response.id, trace.id);
+                // printf("RESPONSE IS TYPE : %d\n", response.type);
+                // printf("RES ID : %d --- PID : %d\n", response.id, trace.id);
                 if (response.id != trace.id) {
                     printf("OTHER ICMP PACKET\n");
                     free(response.address);
                     continue;
                 }
+                unsigned long int actual_time = getTimeStamp();
+                unsigned long int time_diff = actual_time - og_time;
+                printf("%d %s (%s) %.3f ms\n", ttl, response.address, response.address, (float)time_diff / 1000);
+                if (response.type == 0) {
+                    return 0;
+                }
+            }
+            else {
+                // printf("PACKET < 60, NOT PARSING IT\n");
             }
         // }
-        sleep(1);
+        // sleep(1);
         ttl++;
     }
 

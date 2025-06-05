@@ -25,6 +25,9 @@ typedef struct s_response {
 
 bool                print_help();
 
+void                print_icmp_header(void *packet, int bytes);
+void                dump_ip_header(void *packet);
+
 void                craft_icmp_packet(char *packet, t_trace trace);
 void                dump_packet(char *packet);
 unsigned long       getTimeStamp(void);

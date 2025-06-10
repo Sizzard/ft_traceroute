@@ -19,7 +19,7 @@ uint16_t get_checksum(const void *buf, size_t len) {
     return (uint16_t)(~sum);
 }
 
-void craft_icmp_packet(char *packet, t_trace trace, int sequence) {
+void craft_icmp_packet(char *packet, t_trace trace) {
     struct icmphdr *icmp;
     char payload[64] = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
 
@@ -27,8 +27,8 @@ void craft_icmp_packet(char *packet, t_trace trace, int sequence) {
 
     icmp->type = 8;
     icmp->code = 0;
-    icmp->un.echo.id = htons(trace.id);
-    icmp->un.echo.sequence = htons(sequence);
+    icmp->un.echo.id = htons(trace.pid);
+    icmp->un.echo.sequence = htons(trace.id);
     icmp->checksum = 0;
 
     memcpy(packet + (sizeof(icmp)), payload, 54);

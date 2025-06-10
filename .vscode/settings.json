@@ -4,6 +4,7 @@
         "socket.h": "c",
         "ip.h": "c",
         "stdio.h": "c",
-        "in.h": "c"
+        "in.h": "c",
+        "time.h": "c"
     }
 }

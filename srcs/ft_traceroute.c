@@ -77,6 +77,18 @@ t_trace init_trace() {
     return trace;
 }
 
+int get_packet_sequence(char *packet, size_t bytes) {
+    struct icmphdr *icmp;
+    if (bytes < 54) {
+        return -1;
+    }
+    icmp = (struct icmphdr*)(packet + 20);
+    if (icmp->type != 0) {
+        icmp = (struct icmphdr*)(packet + 48);
+    }
+    return ntohs(icmp->un.echo.sequence);
+}
+
 int ft_traceroute(char *real_address, char *address) {
     char packet[1024] = {0}; 
     char recv_buf[1024] = {0}; 
@@ -84,9 +96,14 @@ int ft_traceroute(char *real_address, char *address) {
     t_trace trace;
     int sock = 0;
     int ttl = 1;
+    int retval;
+    fd_set rfds, wfds;
+    struct timeval tv;
 
-    (void)real_address;
-    // printf("address : %s\n", address);
+    (void)retval;
+    (void)wfds;
+    (void)tv;
+    // printf("real address : %s ;address : %s\n", real_address, address);
 
     addr.sin_family = AF_INET;
     addr.sin_port = 0;
@@ -102,48 +119,85 @@ int ft_traceroute(char *real_address, char *address) {
 
     printf("traceroute to %s (%s), 30 hops max, 60 byte packets\n", real_address, address);
     
-    while (ttl < 30) {
+    while (ttl < 31) {
 
-        craft_icmp_packet(packet, trace);
+        craft_icmp_packet(packet, trace, 170);
 
         set_ttl(sock, ttl);
 
         int bytes = 0;
 
-        unsigned long int og_time = getTimeStamp();
+        FD_ZERO(&rfds);
+        FD_SET(sock, &rfds);
+        FD_ZERO(&wfds);
+        FD_SET(sock, &wfds);
 
-        bytes = sendto(sock, packet, 60, 0, (const struct sockaddr *)&addr, sizeof(addr));
-        // printf("Sended %d bytes\n", bytes);
-        if (bytes <= 0) {
-            fprintf(stderr, "ft_traceroute: sending packet: No buffer space available\n");
+        tv.tv_sec = 1;
+        tv.tv_usec = 0;
+
+        // printf("First select called\n");
+        retval = select(sock + 1, NULL,  &wfds, NULL, &tv);
+        if (retval == -1) {
+            perror("select()");
+            continue;
+        }
+        else if (retval == 0) {
+            fprintf(stderr, "ft_traceroute: sending packet: failed sendto() returned : %d\n", bytes);
             return 1;
         }
+        else {
+            // printf("FIRST SELECT SUCCESSFULL\n");
+            unsigned long int og_time = getTimeStamp();
 
-        // while (true) {
-            bytes = recvfrom(sock, recv_buf, 1024, 0, 0, NULL);
-            // printf("Received %d bytes\n", bytes);
-            if (bytes > 0) {
-                // print_icmp_header(recv_buf + 20, bytes);
-                t_response response = parse_response(recv_buf, bytes);
-                // printf("RESPONSE IS TYPE : %d\n", response.type);
-                // printf("RES ID : %d --- PID : %d\n", response.id, trace.id);
-                if (response.id != trace.id) {
-                    printf("OTHER ICMP PACKET\n");
-                    free(response.address);
-                    continue;
+            bytes = sendto(sock, packet, 60, 0, (const struct sockaddr *)&addr, sizeof(addr));
+            // dump_packet(packet + 27, 60);
+            // printf("Sended %d bytes\n", bytes);
+            if (bytes <= 0) {
+                fprintf(stderr, "ft_traceroute: sending packet: failed sendto() returned : %d\n", bytes);
+                return 1;
+            }
+
+            while (true) {
+                // printf("SECOND SELECT CALLED\n");
+                retval = select(sock + 1, &rfds,  NULL, NULL, &tv);
+                if (retval == -1) {
+                    perror("select()");
+                    break;
                 }
-                unsigned long int actual_time = getTimeStamp();
-                unsigned long int time_diff = actual_time - og_time;
-                printf("%d %s (%s) %.3f ms\n", ttl, response.address, response.address, (float)time_diff / 1000);
-                if (response.type == 0) {
-                    return 0;
+                else if (retval == 0) {
+                    printf("%2d *\n", ttl);
+                    break;
+                }
+                else {
+                    // printf("SECOND SELECT SUCCESSFULL\n");
+                    bytes = recvfrom(sock, recv_buf, 1024, 0, 0, NULL);
+                    // printf("Received %d bytes\n", bytes);
+                    // dump_packet(recv_buf + 54, bytes);
+                    // printf("Sequence : %d\n", get_packet_sequence(recv_buf, bytes));
+                    if (bytes > 0) {
+                        // print_icmp_header(recv_buf + 20, bytes);
+                        t_response response = parse_response(recv_buf, bytes);
+                        // printf("RESPONSE IS TYPE : %d\n", response.type);
+                        // printf("RES ID : %d --- PID : %d\n", response.id, trace.id);
+                        if (response.id != trace.id) {
+                            printf("OTHER ICMP PACKET\n");
+                            free(response.address);
+                            continue;
+                        }
+                        unsigned long int actual_time = getTimeStamp();
+                        unsigned long int time_diff = actual_time - og_time;
+                        printf("%2d %s (%s) %.3f ms\n", ttl, response.address, response.address, (float)time_diff / 1000);
+                        if (response.type == 0) {
+                            return 0;
+                        }
+                        break;
+                    }
+                    else {
+                        printf("PACKET SIZE TOO LITTLE, NOT PARSING IT\n");
+                    }
                 }
             }
-            else {
-                // printf("PACKET < 60, NOT PARSING IT\n");
-            }
-        // }
-        // sleep(1);
+        }
         ttl++;
     }
 

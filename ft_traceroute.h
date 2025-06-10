@@ -9,6 +9,8 @@
 #include <sys/time.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <sys/types.h>
+#include <netdb.h>
 
 
 typedef struct s_trace {
@@ -28,7 +30,9 @@ bool                print_help();
 void                print_icmp_header(void *packet, int bytes);
 void                dump_ip_header(void *packet);
 
-void                craft_icmp_packet(char *packet, t_trace trace);
-void                dump_packet(char *packet);
+char                *get_ip_address_from_domain(char *address);
+
+void                craft_icmp_packet(char *packet, t_trace trace, int sequence);
+void                dump_packet(char *packet, size_t bytes);
 unsigned long       getTimeStamp(void);
 int                 ft_traceroute(char *real_address, char *address);

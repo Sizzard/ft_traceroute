@@ -21,8 +21,6 @@ uint16_t get_checksum(const void *buf, size_t len) {
 
 void craft_icmp_packet(char *packet, t_trace trace) {
     struct icmphdr *icmp;
-    char payload[64] = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
-
     icmp = (struct icmphdr *)(packet);
 
     icmp->type = 8;
@@ -31,7 +29,6 @@ void craft_icmp_packet(char *packet, t_trace trace) {
     icmp->un.echo.sequence = htons(trace.id);
     icmp->checksum = 0;
 
-    memcpy(packet + (sizeof(icmp)), payload, 54);
 
     icmp->checksum = get_checksum(icmp, 60);
 }

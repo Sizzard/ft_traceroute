@@ -9,31 +9,31 @@ void dump_packet(char *packet, size_t bytes) {
 }
 
 void dump_ip_header(void *packet) {
-    struct iphdr *ip = (struct iphdr *)(packet + 28);
+    struct iphdr *ip = (struct iphdr *)(packet);
     struct sockaddr_in src, dst;
     char *dst_addr;
     char *src_addr;
-    char *pack_char = packet;
-    int flag = ip->frag_off >> 5;
-    int offset = 3 << ip->frag_off;
-    offset = offset >> 3;
+    // char *pack_char = packet;
+    // int flag = ip->frag_off >> 5;
+    // int offset = 3 << ip->frag_off;
+    // offset = offset >> 3;
 
     printf("IP Hdr Dump:\n");
-    for (size_t i = 28; i < 48; i += 2) {
-        printf(" %02x%02x", (unsigned char)pack_char[i], (unsigned char)pack_char[i + 1]);
-    }
-    printf("\n");
-    printf("Vr HL TOS  Len   ID Flg  off TTL Pro  cks      Src	Dst	Data\n");
-    printf(" %x", ip->version);
-    printf(" %x", ip->ihl);
-    printf("   %02x", ip->tos);
-    printf(" %04x", htons(ip->tot_len));
-    printf(" %x", ip->id);
-    printf("   %x", flag);
-    printf(" %04x", offset);
-    printf("  %02x", ip->ttl);
-    printf("  %02x", ip->protocol);
-    printf(" %04x", ip->check);
+    // for (size_t i = 28; i < 48; i += 2) {
+    //     printf(" %02x%02x", (unsigned char)pack_char[i], (unsigned char)pack_char[i + 1]);
+    // }
+    // printf("\n");
+    // printf("Vr HL TOS  Len   ID Flg  off TTL Pro  cks      Src	Dst	Data\n");
+    // printf(" %x", ip->version);
+    // printf(" %x", ip->ihl);
+    // printf("   %02x", ip->tos);
+    // printf(" %04x", htons(ip->tot_len));
+    // printf(" %x", ip->id);
+    // printf("   %x", flag);
+    // printf(" %04x", offset);
+    // printf("  %02x", ip->ttl);
+    // printf("  %02x", ip->protocol);
+    // printf(" %04x", ip->check);
 
     src.sin_addr.s_addr = ip->saddr;
     src_addr = inet_ntoa(src.sin_addr);

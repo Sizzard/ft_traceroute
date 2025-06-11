@@ -2,19 +2,14 @@
 
 
 char *get_ip_address(struct sockaddr *addr) {
-    char ipstr[32];
-    void *addr_ptr;
-
     if (addr->sa_family == AF_INET) {
         struct sockaddr_in *ipv4 = (struct sockaddr_in *)addr;
-        addr_ptr = &(ipv4->sin_addr);
-    } else {
-        printf("Unsupported address family\n");
+        return ft_strdup(inet_ntoa(ipv4->sin_addr));
+    }
+	else {
+        fprintf(stderr, "Unsupported address family\n");
         return NULL;
     }
-
-    inet_ntop(addr->sa_family, addr_ptr, ipstr, sizeof(ipstr));
-    return strdup(ipstr);
 }
 
 char *get_ip_address_from_domain(char *address) {
@@ -22,7 +17,7 @@ char *get_ip_address_from_domain(char *address) {
     char *res;
     int s;
     
-    memset(&hints, 0, sizeof(struct addrinfo));
+    ft_memset(&hints, 0, sizeof(struct addrinfo));
     
     hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_RAW;
@@ -50,4 +45,85 @@ unsigned long getTimeStamp(void) {
     time = 1000000 * tv.tv_sec + tv.tv_usec;
 
     return time;
+}
+
+bool is_num(char *str) {
+    while(*str) {
+        if (*str < '0' || *str > '9') {
+            return false;
+        }
+        str++;
+    }
+    return true;
+}
+
+void	*ft_memset(void *s, int c, size_t n)
+{
+	size_t			i;
+	unsigned char	*p;
+
+	p = s;
+	i = 0;
+	while (i < n)
+	{
+		p[i] = c;
+		i++;
+	}
+	return (s);
+}
+
+size_t	ft_strlen(const char *s)
+{
+	size_t	i;
+
+	i = 0;
+	while (s[i])
+		i++;
+	return (i);
+}
+
+char	*ft_strdup(const char *s)
+{
+	int		i;
+	char	*str;
+
+	i = 0;
+	str = malloc(ft_strlen(s) + 1);
+	if (str == NULL)
+		return (NULL);
+	while (s[i])
+	{
+		str[i] = s[i];
+		i++;
+	}
+	str[i] = 0;
+	return (str);
+}
+
+int	ft_atoi(const char *nptr)
+{
+	int	i;
+	int	res;
+	int	min;
+
+	res = 0;
+	i = 0;
+	min = 0;
+	while (nptr[i] == ' ' || (nptr[i] >= 9 && nptr[i] <= 13))
+		i++;
+	if (nptr[i] == '-')
+	{
+		min += 1;
+		i++;
+	}
+	else if (nptr[i] == '+')
+		i++;
+	while (nptr[i] >= '0' && nptr[i] <= '9')
+	{
+		res = res * 10 + (nptr[i] - 48);
+		i++;
+	}
+	if (min > 0)
+		return (-res);
+	return (res);
 }
